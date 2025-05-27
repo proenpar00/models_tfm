@@ -1,0 +1,5 @@
+train: C:\Users\cabel\Desktop\TFM_v2\MODELS\data_kfold_coco_v2/fold_3/train/images
+val: C:\Users\cabel\Desktop\TFM_v2\MODELS\data_kfold_coco_v2/fold_3/val/images
+
+nc: 6
+names: ['ASC-H', 'ASC-US', 'HSIL', 'LSIL', 'NILM', 'SCC']
