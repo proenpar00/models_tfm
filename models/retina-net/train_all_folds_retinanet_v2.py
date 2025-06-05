@@ -1,4 +1,4 @@
-import os 
+import os
 import torch
 import torchvision
 import torchvision.transforms as T
@@ -14,7 +14,7 @@ NUM_EPOCHS = 100
 BATCH_SIZE = 4
 LEARNING_RATE = 0.005
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-DATA_DIR = 'data_kfold_coco'
+DATA_DIR = 'models/retina-net/data_kfold_coco_retinanet'
 RESULTS_DIR = 'models/retina-net/results'
 
 # Transformaciones
@@ -26,7 +26,7 @@ transform = T.Compose([
 def get_coco_dataset(img_dir, ann_file):
     return CocoDetection(img_dir, ann_file, transform=transform)
 
-# Función para convertir anotaciones COCO al formato esperado por Faster R-CNN
+# Conversión de anotaciones COCO
 def convert_coco_annotations(coco_targets):
     new_targets = []
     for anns in coco_targets:
@@ -43,10 +43,8 @@ def convert_coco_annotations(coco_targets):
         new_targets.append(target_dict)
     return new_targets
 
-# Función para calcular métricas (simplificada)
+# Placeholder de métricas
 def compute_metrics(outputs, targets):
-    # Esta función debe implementarse para calcular Precision, Recall, mAP@50, mAP@50-95 y F1-score
-    # Aquí se proporciona una estructura básica
     return {
         'precision': 0.0,
         'recall': 0.0,
@@ -64,24 +62,29 @@ for fold in range(10):
     train_ann = os.path.join(fold_dir, 'train', 'annotations.json')
     val_ann = os.path.join(fold_dir, 'val', 'annotations.json')
 
-    # Cargar conjuntos de datos
+    # Cargar datasets
     train_dataset = get_coco_dataset(train_dir, train_ann)
     val_dataset = get_coco_dataset(val_dir, val_ann)
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=lambda x: tuple(zip(*x)))
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, collate_fn=lambda x: tuple(zip(*x)))
 
-    # Inicializar modelo
+    # Inicializar modelo RetinaNet
     model = retinanet_resnet50_fpn(pretrained=True)
-    in_features = model.roi_heads.box_predictor.cls_score.in_features
-    model.roi_heads.box_predictor = torchvision.models.detection.faster_rcnn.FastRCNNPredictor(in_features, NUM_CLASSES + 1)
+    num_anchors = model.head.classification_head.num_anchors
+    in_channels = model.backbone.out_channels
+    model.head.classification_head = torchvision.models.detection.retinanet.RetinaNetClassificationHead(
+        in_channels=in_channels,
+        num_anchors=num_anchors,
+        num_classes=NUM_CLASSES + 1  # +1 por clase de fondo
+    )
     model.to(DEVICE)
 
     # Optimizador
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.SGD(params, lr=LEARNING_RATE, momentum=0.9, weight_decay=0.0005)
 
-    # Directorio de resultados
+    # Crear directorio de resultados
     fold_results_dir = os.path.join(RESULTS_DIR, f'fold_{fold}')
     os.makedirs(fold_results_dir, exist_ok=True)
     metrics_list = []
@@ -91,11 +94,13 @@ for fold in range(10):
         model.train()
         epoch_loss = 0.0
         for images, targets in tqdm(train_loader, desc=f'Epoch {epoch+1}/{NUM_EPOCHS}'):
-            images = list(image.to(DEVICE) for image in images)
-            targets = convert_coco_annotations(targets)  # Conversión aquí
+            images = [img.to(DEVICE) for img in images]
+            targets = convert_coco_annotations(targets)
             targets = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
+
             loss_dict = model(images, targets)
             losses = sum(loss for loss in loss_dict.values())
+
             optimizer.zero_grad()
             losses.backward()
             optimizer.step()
@@ -107,7 +112,7 @@ for fold in range(10):
             all_outputs = []
             all_targets = []
             for images, targets in val_loader:
-                images = list(img.to(DEVICE) for img in images)
+                images = [img.to(DEVICE) for img in images]
                 outputs = model(images)
                 all_outputs.extend(outputs)
                 all_targets.extend(targets)
