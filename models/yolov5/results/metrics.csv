@@ -1,1 +1,11 @@
-fold,precision,recall,mAP50,mAP50-95,f1,best_model_path
+fold;precision;recall;mAP50;mAP50-95;f1;best_model_path
+0;0.6077;0.6611;0.6891;0.4707;0.6333;models/yolov5/fold_0/weights/best.pt
+1;0.6744;0.668;0.7291;0.4886;0.6712;models/yolov5/fold_1/weights/best.pt
+2;0.692;0.6909;0.7313;0.5025;0.6914;models/yolov5/fold_2/weights/best.pt
+3;0.5785;0.6858;0.6507;0.438;0.6276;models/yolov5/fold_3/weights/best.pt
+4;0.6201;0.6873;0.6982;0.4796;0.652;models/yolov5/fold_4/weights/best.pt
+5;0.6539;0.6499;0.7089;0.4753;0.6519;models/yolov5/fold_5/weights/best.pt
+6;0.6515;0.7102;0.7254;0.4872;0.6796;models/yolov5/fold_6/weights/best.pt
+7;0.6737;0.6303;0.6938;0.4724;0.6513;models/yolov5/fold_7/weights/best.pt
+8;0.6382;0.6944;0.7094;0.4818;0.6652;models/yolov5/fold_8/weights/best.pt
+9;0.6713;0.7068;0.7265;0.4874;0.6886;models/yolov5/fold_9/weights/best.pt
